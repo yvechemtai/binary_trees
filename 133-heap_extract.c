@@ -1,159 +1,103 @@
 #include "binary_trees.h"
 
 /**
- * heap_extract - Extracts the root node of a Max Binary Heap
+ * heap_extract - extracts the root node of a Max Binary Heap
+ * @root: double pointer to the root node of heap
  *
- * @root: Double pointer to the root node of the heap
- *
- * Return: Value stored in the root node
+ * Return: value stored in the root node
  */
 int heap_extract(heap_t **root)
 {
-    int value;
-    heap_t *last_node, *parent;
+	if (!root || !*root)
+		return (0);
 
-    if (root == NULL || *root == NULL)
-        return (0);
+	int value = (*root)->n;
+	heap_t *last = get_last_node(*root);
 
-    value = (*root)->n;
-    last_node = get_last_node(*root);
+	if (*root == last)
+	{
+		free(*root);
+		*root = NULL;
+		return (value);
+	}
 
-    if (*root == last_node)
-    {
-        free(*root);
-        *root = NULL;
-        return (value);
-    }
+	swap(&last->n, &(*root)->n);
 
-    parent = get_parent(*root, last_node);
-    if (parent->left == last_node)
-        parent->left = NULL;
-    else
-        parent->right = NULL;
+	if (last->parent && last->parent->left == last)
+		last->parent->left = NULL;
+	else if (last->parent)
+		last->parent->right = NULL;
 
-    (*root)->n = last_node->n;
-    free(last_node);
+	free(last);
+	heapify(*root);
 
-    heapify_down(*root);
-
-    return (value);
+	return (value);
 }
 
 /**
- * get_last_node - Gets the last node of a Max Binary Heap
+ * get_last_node - returns the last node of the heap in level-order traversal
+ * @root: pointer to the root node of heap
  *
- * @root: Pointer to the root node of the heap
- *
- * Return: Pointer to the last node of the heap
+ * Return: pointer to the last node of the heap
  */
 heap_t *get_last_node(heap_t *root)
 {
-    int height, i;
-    heap_t *node;
+	if (!root)
+		return (NULL);
 
-    height = binary_tree_height(root);
+	queue_t *queue = NULL;
+	heap_t *node = NULL;
 
-    for (i = 0; i <= height; i++)
-    {
-        node = get_node_at_level(root, i);
-    }
+	queue_push(&queue, root);
 
-    return (node);
+	while (queue)
+	{
+		node = (heap_t *)queue_pop(&queue);
+
+		if (node->left)
+			queue_push(&queue, node->left);
+
+		if (node->right)
+			queue_push(&queue, node->right);
+	}
+
+	return (node);
 }
 
 /**
- * get_node_at_level - Gets the node at a given level of a Max Binary Heap
- *
- * @root: Pointer to the root node of the heap
- * @level: Level of the node to get
- *
- * Return: Pointer to the node at the given level
+ * heapify - rebuilds the heap after the root node is replaced
+ * @root: pointer to the root node of heap
  */
-heap_t *get_node_at_level(heap_t *root, int level)
+void heapify(heap_t *root)
 {
-    heap_t *node;
+	if (!root)
+		return;
 
-    if (root == NULL)
-        return (NULL);
+	heap_t *largest = root;
+	heap_t *left = root->left;
+	heap_t *right = root->right;
 
-    if (level == 0)
-        return (root);
+	if (left && left->n > largest->n)
+		largest = left;
 
-    node = get_node_at_level(root->left, level - 1);
-    if (node == NULL)
-        node = get_node_at_level(root->right, level - 1);
+	if (right && right->n > largest->n)
+		largest = right;
 
-    return (node);
+	if (largest != root)
+	{
+		swap(&root->n, &largest->n);
+		heapify(largest);
+	}
 }
 
 /**
- * get_parent - Gets the parent of a node in a Max Binary Heap
- *
- * @root: Pointer to the root node of the heap
- * @node: Pointer to the node to get the parent of
- *
- * Return: Pointer to the parent of the given node
+ * swap - swaps two integers
+ * @a: pointer to the first integer
+ * @b: pointer to the second integer
  */
-heap_t *get_parent(heap_t *root, heap_t *node)
+void swap(int *a, int *b)
 {
-    heap_t *parent;
-
-    if (root == NULL || root == node)
-        return (NULL);
-
-    if (root->left == node || root->right == node)
-        return (root);
-
-    parent = get_parent(root->left, node);
-    if (parent == NULL)
-        parent = get_parent(root->right, node);
-
-    return (parent);
-}
-
-/**
- * heapify_down - Heapifies a Max Binary Heap after extracting the root node
- *
- * @root: Pointer to the root node of the heap
- */
-void heapify_down(heap_t *root)
-{
-    heap_t *largest, *node;
-
-    if (root == NULL)
-        return;
-
-    node = root;
-
-    while (1)
-    {
-        largest = node;
-
-        if (node->left != NULL && node->left->n > largest->n)
-            largest = node->left;
-
-        if (node->right != NULL && node->right->n > largest->n)
-            largest = node->right;
-
-        if (largest == node)
-            break;
-
-        swap_nodes(node, largest);
-        node = largest;
-    }
-}
-
-/**
- * swap_nodes - Swaps two nodes in a Max Binary Heap
- *
- * @node1: Pointer to the first node to swap
- * @node2: Pointer to the second node to swap
- */
-void swap_nodes(heap_t *node1, heap_t *node2)
-{
-    int temp;
-
-    temp = node1->n;
-    node1->n = node2->n;
-    node2->n = temp;
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
 }
