@@ -1,103 +1,140 @@
 #include "binary_trees.h"
+#include <stdlib.h>
 
 /**
- * heap_extract - extracts the root node of a Max Binary Heap
- * @root: double pointer to the root node of heap
+ * tree_height - measures the height of a binary tree
+ * @tree: pointer to the root node of the tree to measure the height
  *
- * Return: value stored in the root node
+ * Return: Height or 0 if tree is NULL
  */
-int heap_extract(heap_t **root)
+size_t tree_height(const heap_t *tree)
 {
-	if (!root || !*root)
+	size_t height_l = 0;
+	size_t height_r = 0;
+
+	if (!tree)
 		return (0);
 
-	int value = (*root)->n;
-	heap_t *last = get_last_node(*root);
+	if (tree->left)
+		height_l = 1 + tree_height(tree->left);
 
-	if (*root == last)
-	{
-		free(*root);
-		*root = NULL;
-		return (value);
-	}
+	if (tree->right)
+		height_r = 1 + tree_height(tree->right);
 
-	swap(&last->n, &(*root)->n);
-
-	if (last->parent && last->parent->left == last)
-		last->parent->left = NULL;
-	else if (last->parent)
-		last->parent->right = NULL;
-
-	free(last);
-	heapify(*root);
-
-	return (value);
+	if (height_l > height_r)
+		return (height_l);
+	return (height_r);
 }
-
 /**
- * get_last_node - returns the last node of the heap in level-order traversal
- * @root: pointer to the root node of heap
+ * tree_size_h - measures the sum of heights of a binary tree
+ * @tree: pointer to the root node of the tree to measure the height
  *
- * Return: pointer to the last node of the heap
+ * Return: Height or 0 if tree is NULL
  */
-heap_t *get_last_node(heap_t *root)
+size_t tree_size_h(const binary_tree_t *tree)
 {
-	if (!root)
-		return (NULL);
+	size_t height_l = 0;
+	size_t height_r = 0;
 
-	queue_t *queue = NULL;
-	heap_t *node = NULL;
+	if (!tree)
+		return (0);
 
-	queue_push(&queue, root);
+	if (tree->left)
+		height_l = 1 + tree_size_h(tree->left);
 
-	while (queue)
-	{
-		node = (heap_t *)queue_pop(&queue);
+	if (tree->right)
+		height_r = 1 + tree_size_h(tree->right);
 
-		if (node->left)
-			queue_push(&queue, node->left);
-
-		if (node->right)
-			queue_push(&queue, node->right);
-	}
-
-	return (node);
+	return (height_l + height_r);
 }
 
 /**
- * heapify - rebuilds the heap after the root node is replaced
- * @root: pointer to the root node of heap
+ * _preorder - goes through a binary tree using pre-order traversal
+ * @tree: pointer to the root node of the tree to traverse
+ * @node: will be last note in traverse
+ * @height: height of tree
+ *
+ * Return: No Return
+ */
+void _preorder(heap_t *tree, heap_t **node, size_t height)
+{
+	if (!tree)
+		return;
+
+	if (!height)
+		*node = tree;
+	height--;
+
+	_preorder(tree->left, node, height);
+	_preorder(tree->right, node, height);
+}
+
+/**
+ * heapify - heapifies max binary heap
+ * @root: pointer to binary heap
  */
 void heapify(heap_t *root)
 {
+	int value;
+	heap_t *tmp1, *tmp2;
+
 	if (!root)
 		return;
 
-	heap_t *largest = root;
-	heap_t *left = root->left;
-	heap_t *right = root->right;
+	tmp1 = root;
 
-	if (left && left->n > largest->n)
-		largest = left;
-
-	if (right && right->n > largest->n)
-		largest = right;
-
-	if (largest != root)
+	while (1)
 	{
-		swap(&root->n, &largest->n);
-		heapify(largest);
+		if (!tmp1->left)
+			break;
+		if (!tmp1->right)
+			tmp2 = tmp1->left;
+		else
+		{
+			if (tmp1->left->n > tmp1->right->n)
+				tmp2 = tmp1->left;
+			else
+				tmp2 = tmp1->right;
+		}
+		if (tmp1->n > tmp2->n)
+			break;
+		value = tmp1->n;
+		tmp1->n = tmp2->n;
+		tmp2->n = value;
+		tmp1 = tmp2;
 	}
 }
 
 /**
- * swap - swaps two integers
- * @a: pointer to the first integer
- * @b: pointer to the second integer
- */
-void swap(int *a, int *b)
+ * heap_extract - extracts the root node from a Max Binary Heap
+ * @root: pointer to the heap root
+ * Return: value of extracted node
+ **/
+int heap_extract(heap_t **root)
 {
-	int tmp = *a;
-	*a = *b;
-	*b = tmp;
+	int value;
+	heap_t *heap_r, *node;
+
+	if (!root || !*root)
+		return (0);
+	heap_r = *root;
+	value = heap_r->n;
+	if (!heap_r->left && !heap_r->right)
+	{
+		*root = NULL;
+		free(heap_r);
+		return (value);
+	}
+
+	_preorder(heap_r, &node, tree_height(heap_r));
+
+	heap_r->n = node->n;
+	if (node->parent->right)
+		node->parent->right = NULL;
+	else
+		node->parent->left = NULL;
+	free(node);
+	heapify(heap_r);
+	*root = heap_r;
+	return (value);
 }
