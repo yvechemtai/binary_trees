@@ -17,6 +17,8 @@ heap_t *array_to_heap(int *array, size_t size)
     {
         if (heap_insert(&root, array[i]) == NULL)
             return (NULL);
+            }
+
     }
 
     return (root);
